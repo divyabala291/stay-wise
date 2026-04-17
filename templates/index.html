@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>StayWise - Home</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body {
+      margin:0;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: url('{{ url_for("static", filename="images/img1.jpg") }}') no-repeat center center fixed;
+      background-size: cover;
+      min-height: 100vh;
+      opacity: 1;
+      transition: opacity 0.7s ease; /* smooth fade effect */
+    }
+
+    body.fade-out {
+      opacity: 0; /* triggers fade-out */
+    }
+
+    .overlay {
+      background: rgba(248,246,240,0.55);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 20px;
+    }
+
+    h1 {
+      font-size: 3rem;
+      color: #4b3b2f;
+      margin-bottom: 10px;
+    }
+
+    p {
+      font-size: 1.2rem;
+      color: #7a5c46;
+      margin-bottom: 20px;
+    }
+
+    a.button {
+      display: inline-block;
+      padding: 12px 24px;
+      background-color: #b85c3b;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: bold;
+      transition: background 0.3s;
+      cursor: pointer;
+    }
+
+    a.button:hover {
+      background-color: #8b4a2f;
+    }
+
+    @media (max-width: 600px){
+      h1 { font-size: 2rem; }
+      p { font-size: 1rem; }
+      a.button { padding: 10px 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay">
+    <h1>Welcome to StayWise</h1>
+    <p>Travel smart, stay happy, explore the world with heart.</p>
+    <a href="/hotels" class="button" id="exploreBtn">Explore Hotels</a>
+  </div>
+
+  <script>
+    document.getElementById("exploreBtn").addEventListener("click", function(e){
+      e.preventDefault(); // stop instant navigation
+      document.body.classList.add("fade-out");
+      setTimeout(() => {
+        window.location.href = this.href; // redirect after fade
+      }, 700); // match transition duration
+    });
+  </script>
+</body>
+</html>

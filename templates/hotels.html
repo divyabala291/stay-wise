@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>StayWise</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root{
+      --bg:#f8f6f0;        /* warm off-white background */
+      --card:#f5ede1;      /* soft beige card background */
+      --muted:#7a5c46;     /* warm brown text for muted info */
+      --accent:#b85c3b;    /* subtle reddish-brown accent for best price */
+      --input-bg:#fdf7f0;  /* off-white input background */
+    }
+
+    body {
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      margin:0;
+      background:var(--bg);
+      color:#111;
+    }
+
+    .container { max-width:1200px; margin:28px auto; padding:20px; }
+
+    header {
+      text-align:center;
+      margin-bottom:20px;
+    }
+    h1 {
+      margin:0;
+      font-size:2rem;
+    }
+    .moral {
+      margin-top:6px;
+      color:var(--muted);
+      font-size:1rem;
+    }
+
+    .controls {
+      display:flex;
+      justify-content:center;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:16px;
+    }
+
+    input[type="text"], select {
+      padding:8px 10px;
+      border-radius:8px;
+      border:1px solid #d1bfae;
+      min-width:160px;
+      background: var(--input-bg);
+      color: #4b3b2f;
+    }
+
+    button {
+      padding:8px 12px;
+      border-radius:8px;
+      border:0;
+      cursor:pointer;
+      background:var(--accent);
+      color:white;
+    }
+
+    .layout { display:grid; grid-template-columns: 2fr 1fr; gap:20px; margin-top:20px; }
+    .hotels { display:grid; gap:16px; }
+
+    .hotel {
+      background:var(--card);
+      border-radius:12px;
+      padding:14px;
+      box-shadow:0 6px 20px rgba(2,6,23,0.06);
+      display:flex;
+      gap:12px;
+      align-items:flex-start;
+    }
+
+    .thumb { width:180px; height:110px; border-radius:8px; object-fit:cover; background:#eee; }
+    .hotel-info { flex:1; }
+    .hotel-info h2 { margin:0 0 6px 0; font-size:1.05rem; color:#4b3b2f; }
+    .meta { color:var(--muted); font-size:0.9rem; margin-bottom:8px; }
+    .sources { display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+
+    .source { background:#f3e8de; padding:6px 8px; border-radius:8px; display:flex; gap:8px; align-items:center; font-size:0.95rem; color:#4b3b2f; }
+    .source.best { border:2px solid var(--accent); color:var(--accent); font-weight:600; background:#fdebe0; }
+    .source a {
+      text-decoration:none;
+      color:white;
+      padding:6px 8px;
+      border-radius:6px;
+      background:#8b4a2f;
+      font-size:0.85rem;
+    }
+
+    .sidebar { background:var(--card); border-radius:12px; padding:14px; box-shadow:0 6px 20px rgba(2,6,23,0.06); }
+    .section-title { font-weight:700; margin:0 0 10px 0; font-size:1rem; color:#4b3b2f; }
+    ul.places { padding-left:18px; margin:6px 0 12px 0; }
+    .muted { color:var(--muted); font-size:0.95rem; }
+    .no-image { width:180px; height:110px; display:flex; align-items:center; justify-content:center; color:#9ca3af; background:#f3f1eb; border-radius:8px; }
+    footer { margin-top:28px; text-align:center; color:var(--muted); font-size:0.9rem; }
+
+    /* autocomplete suggestions */
+    #citySuggestions {
+      position:absolute;
+      top:100%;
+      left:0;
+      right:0;
+      background:white;
+      border:1px solid #d1bfae;
+      border-radius:6px;
+      max-height:150px;
+      overflow-y:auto;
+      z-index:10;
+      display:none;
+      padding:0;
+      margin:0;
+      list-style:none;
+    }
+    #citySuggestions li {
+      padding:6px 10px;
+      cursor:pointer;
+    }
+    #citySuggestions li:hover {
+      background:#f5ede1;
+    }
+
+    @media (max-width:900px){
+      .layout { grid-template-columns: 1fr; }
+      .thumb, .no-image { width:140px; height:90px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>StayWise</h1>
+      <div class="moral">Travel smart, stay happy, explore the world with heart.</div>
+    </header>
+
+    <!-- Filters -->
+    <div class="controls" role="region" aria-label="controls">
+      <div style="position:relative;">
+        <input id="city" type="text" placeholder="Enter city..." autocomplete="off"/>
+        <ul id="citySuggestions"></ul>
+      </div>
+      <select id="sort">
+        <option value="">Sort by</option>
+        <option value="price">Lowest Price</option>
+        <option value="rating">Highest Rating</option>
+      </select>
+      <button id="searchBtn">Search</button>
+      <button id="reset">Reset</button>
+    </div>
+
+    <div class="layout">
+      <main>
+        <div id="hotels" class="hotels"></div>
+      </main>
+
+      <aside class="sidebar" id="guidePanel" aria-live="polite">
+        <div>
+          <div class="section-title" id="guide-title">City guide</div>
+          <div class="muted" id="guide-sub">Search or select a city to see restaurants & sightseeing suggestions.</div>
+        </div>
+
+        <div id="guideContent" style="margin-top:12px;">
+          <div id="restaurantsBlock" style="margin-bottom:12px;">
+            <div style="font-weight:700;margin-bottom:6px;">🍴 Restaurants</div>
+            <ul id="restaurants" class="places"></ul>
+          </div>
+
+          <div id="sightsBlock">
+            <div style="font-weight:700;margin-bottom:6px;">🏛️ Sightseeing</div>
+            <ul id="sights" class="places"></ul>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <footer>Built with your merged data • Click a provider's Book button to open the provider site</footer>
+  </div>
+
+  <script>
+    let allHotels = [];
+
+    function safeLower(s){ return (s || "").toString().toLowerCase().trim(); }
+
+    function renderHotels(hotels) {
+      const container = document.getElementById("hotels");
+      container.innerHTML = "";
+
+      if (!hotels.length) {
+        container.innerHTML = '<div class="muted">No hotels found for current filters.</div>';
+        return;
+      }
+
+      hotels.forEach(hotel => {
+        let best = null;
+        (hotel.sources || []).forEach(s => {
+          if (!s) return;
+          const price = Number(s.price) || null;
+          if (price && (!best || price < best.price)) best = { provider: s.provider, price, display: s.display, link: s.link };
+        });
+
+        const imgHtml = hotel.thumbnailUrl ? `<img class="thumb" src="${hotel.thumbnailUrl}" alt="${(hotel.hotelName||'hotel')}">` : `<div class="no-image">No image</div>`;
+
+        const srcHtml = (hotel.sources || []).map(s => {
+          const isBest = best && s.provider === best.provider;
+          const cls = isBest ? 'source best' : 'source';
+          const link = s.link ? s.link : '#';
+          const label = s.provider || "Provider";
+          const display = s.display || (s.price ? '₹' + s.price : "N/A");
+          return `<div class="${cls}"><div style="min-width:90px">${label}</div><div style="margin-left:auto">${display}</div><a href="${link}" target="_blank" rel="noopener noreferrer" style="margin-left:8px">Book</a></div>`;
+        }).join("");
+
+        const hotelHtml = `
+          <div class="hotel">
+            ${imgHtml}
+            <div class="hotel-info">
+              <h2>${hotel.hotelName || "Untitled Hotel"}</h2>
+              <div class="meta">${hotel.address ? hotel.address + ' | ' : '' }${hotel.city || ""} • ⭐ ${hotel.rating || "-"} (${hotel.reviewCount || 0} reviews)</div>
+              <div class="sources">${srcHtml}</div>
+            </div>
+          </div>
+        `;
+        container.insertAdjacentHTML('beforeend', hotelHtml);
+      });
+    }
+
+    function applyFilters() {
+      const cityVal = safeLower(document.getElementById("city").value);
+      const sortVal = document.getElementById("sort").value;
+
+      let filtered = allHotels.filter(h => {
+        const city = safeLower(h.city);
+        return !cityVal || city.includes(cityVal);
+      });
+
+      if (sortVal === "price") {
+        filtered.sort((a,b) => {
+          const aMin = Math.min(...(a.sources || []).map(s => Number(s.price) || Infinity));
+          const bMin = Math.min(...(b.sources || []).map(s => Number(s.price) || Infinity));
+          return aMin - bMin;
+        });
+      } else if (sortVal === "rating") {
+        filtered.sort((a,b)=> (b.rating||0)-(a.rating||0));
+      }
+
+      renderHotels(filtered);
+
+      if (cityVal) {
+        showGuide(cityVal);
+      } else {
+        clearGuide();
+      }
+    }
+
+    function clearGuide() {
+      document.getElementById("guide-title").textContent = "City guide";
+      document.getElementById("guide-sub").textContent = "Search or select a city to see restaurants & sightseeing suggestions.";
+      document.getElementById("restaurants").innerHTML = "";
+      document.getElementById("sights").innerHTML = "";
+    }
+
+    async function showGuide(city) {
+      if (!city) { clearGuide(); return; }
+      document.getElementById("guide-title").textContent = `Guide: ${city.charAt(0).toUpperCase()+city.slice(1)}`;
+      document.getElementById("guide-sub").textContent = "Fetching restaurants & sights...";
+
+      try {
+        const res = await fetch(`/api/guide/${encodeURIComponent(city)}`);
+        if (!res.ok) throw new Error("Guide fetch failed");
+        const data = await res.json();
+
+        // Restaurants
+        const restaurants = (data.restaurants || []).slice(0,8);
+        const restHtml = restaurants.length ? restaurants.map(r => {
+          const q = encodeURIComponent((r.name || r) + ' ' + city);
+          const label = r.name || r;
+          const url = `https://www.google.com/maps/search/?api=1&query=${q}`;
+          return `<li><a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a></li>`;
+        }).join("") : '<li class="muted">No restaurants found.</li>';
+        document.getElementById("restaurants").innerHTML = restHtml;
+
+        // Sightseeing
+        const sights = (data.sightseeing || []).slice(0,8);
+        const sightsHtml = sights.length ? sights.map(s => {
+          const name = (s.name || s).toString();
+          const q = encodeURIComponent(name + " " + city);
+          const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${q}`;
+          return `<li><a href="${mapsUrl}" target="_blank" rel="noopener noreferrer">${name}</a></li>`;
+        }).join("") : '<li class="muted">No sightseeing info found.</li>';
+        document.getElementById("sights").innerHTML = sightsHtml;
+
+        document.getElementById("guide-sub").textContent = `Showing top recommendations for ${city}.`;
+      } catch (err) {
+        console.error(err);
+        document.getElementById("guide-sub").textContent = `Couldn't load city guide for "${city}".`;
+        document.getElementById("restaurants").innerHTML = '<li class="muted">Error fetching restaurants.</li>';
+        document.getElementById("sights").innerHTML = '<li class="muted">Error fetching sights.</li>';
+      }
+    }
+
+    function resetFilters(){
+      document.getElementById("city").value = "";
+      document.getElementById("sort").value = "";
+      applyFilters();
+    }
+
+    // autocomplete
+    const cityInput = document.getElementById("city");
+    const suggestionsList = document.getElementById("citySuggestions");
+
+    function getUniqueCities() {
+      const cities = allHotels.map(h => h.city || "").filter(c => c);
+      return [...new Set(cities)].sort();
+    }
+
+    cityInput.addEventListener("input", () => {
+      const val = cityInput.value.trim().toLowerCase();
+      if (!val || val.length < 1) {
+        suggestionsList.style.display = "none";
+        return;
+      }
+      const matches = getUniqueCities().filter(c => c.toLowerCase().includes(val)).slice(0,5);
+      if(matches.length === 0){
+        suggestionsList.style.display = "none";
+        return;
+      }
+      suggestionsList.innerHTML = matches.map(c => `<li>${c}</li>`).join('');
+      suggestionsList.style.display = "block";
+    });
+
+    suggestionsList.addEventListener("click", (e) => {
+      if(e.target.tagName === "LI"){
+        cityInput.value = e.target.textContent;
+        suggestionsList.style.display = "none";
+      }
+    });
+
+    document.addEventListener("click", (e) => {
+      if(!cityInput.contains(e.target) && !suggestionsList.contains(e.target)){
+        suggestionsList.style.display = "none";
+      }
+    });
+
+    (async function init(){
+      try {
+        const res = await fetch('/api/hotels');
+        if (!res.ok) throw new Error('Failed to load hotels');
+        allHotels = await res.json();
+        applyFilters();
+      } catch (e) {
+        document.getElementById("hotels").innerHTML = `<div class="muted">Error loading hotels: ${e.message}</div>`;
+      }
+    })();
+
+    document.getElementById("searchBtn").addEventListener("click", applyFilters);
+    document.getElementById("reset").addEventListener("click", resetFilters);
+  </script>
+</body>
+</html>

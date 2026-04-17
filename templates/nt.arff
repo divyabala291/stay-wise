@@ -1,0 +1,8 @@
+@relation "employee"
+@attribute id numeric
+@attribute name string
+@attribute dob dd-mm-yy
+@attribute contact numeric
+@attribute dept{hr,it}
+@data
+1,divya,29-10,05,908998978,hr
